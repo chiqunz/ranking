@@ -786,6 +786,28 @@ class ApproxNDCGLoss(_ListwiseLoss):
         tf.cast(nonzero_mask, dtype=tf.float32), [-1, 1])
 
 
+class ApproxNDCGAt1Loss(_ListwiseLoss):
+  """Implements ApproxNDCG loss."""
+
+  def compute_unreduced_loss(self, labels, logits):
+    """See `_RankingLoss`."""
+    alpha = self._params.get('alpha', 10.0)
+    is_valid = utils.is_label_valid(labels)
+    labels = tf.compat.v1.where(is_valid, labels, tf.zeros_like(labels))
+    logits = tf.compat.v1.where(
+        is_valid, logits, -1e3 * tf.ones_like(logits) +
+        tf.reduce_min(input_tensor=logits, axis=-1, keepdims=True))
+
+    label_sum = tf.reduce_sum(input_tensor=labels, axis=1, keepdims=True)
+    nonzero_mask = tf.greater(tf.reshape(label_sum, [-1]), 0.0)
+    labels = tf.compat.v1.where(nonzero_mask, labels,
+                                _EPSILON * tf.ones_like(labels))
+    ranks = utils.approx_ranks(logits, alpha=alpha)
+
+    return -utils.ndcg(labels, ranks, k=1), tf.reshape(
+        tf.cast(nonzero_mask, dtype=tf.float32), [-1, 1])
+
+
 class ApproxMRRLoss(_ListwiseLoss):
   """Implements ApproxMRR loss."""
 

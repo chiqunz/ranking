@@ -39,6 +39,7 @@ class RankingLossKey(object):
   MEAN_SQUARED_LOSS = 'mean_squared_loss'
   LIST_MLE_LOSS = 'list_mle_loss'
   APPROX_NDCG_LOSS = 'approx_ndcg_loss'
+  APPROX_NDCGAT1_LOSS = 'approx_ndcgAt1_loss'
   APPROX_MRR_LOSS = 'approx_mrr_loss'
   GUMBEL_APPROX_NDCG_LOSS = 'gumbel_approx_ndcg_loss'
   NEURAL_SORT_CROSS_ENTROPY_LOSS = 'neural_sort_cross_entropy_loss'
@@ -156,6 +157,7 @@ def make_loss_fn(loss_keys,
         RankingLossKey.LIST_MLE_LOSS:
             (_list_mle_loss, loss_kwargs_with_lambda_weight),
         RankingLossKey.APPROX_NDCG_LOSS: (_approx_ndcg_loss, loss_kwargs),
+        RankingLossKey.APPROX_NDCGAT1_LOSS: (_approx_ndcgAt1_loss, loss_kwargs),
         RankingLossKey.APPROX_MRR_LOSS: (_approx_mrr_loss, loss_kwargs),
         RankingLossKey.GUMBEL_APPROX_NDCG_LOSS:
             (_approx_ndcg_loss, gbl_loss_kwargs),
@@ -226,6 +228,8 @@ def make_loss_metric_fn(loss_key,
           losses_impl.ListMLELoss(name, lambda_weight=lambda_weight),
       RankingLossKey.APPROX_NDCG_LOSS:
           losses_impl.ApproxNDCGLoss(name),
+      RankingLossKey.APPROX_NDCGAT1_LOSS:
+          losses_impl.ApproxNDCGAt1Loss(name),
       RankingLossKey.APPROX_MRR_LOSS:
           losses_impl.ApproxMRRLoss(name),
       RankingLossKey.GUMBEL_APPROX_NDCG_LOSS:
@@ -586,6 +590,43 @@ def _approx_ndcg_loss(labels,
   """
   loss = losses_impl.ApproxNDCGLoss(name, params={'alpha': alpha})
   with tf.compat.v1.name_scope(loss.name, 'approx_ndcg_loss',
+                               (labels, logits, weights)):
+    return loss.compute(labels, logits, weights, reduction)
+
+
+def _approx_ndcgAt1_loss(labels,
+                      logits,
+                      weights=None,
+                      reduction=tf.compat.v1.losses.Reduction.SUM,
+                      name=None,
+                      alpha=10.):
+  """Computes ApproxNDCG@1 loss.
+
+  ApproxNDCG ["A general approximation framework for direct optimization of
+  information retrieval measures" by Qin et al.] is a smooth approximation
+  to NDCG. Its performance on datasets with graded relevance is competitive
+  with other state-of-the-art algorithms [see "Revisiting Approximate Metric
+  Optimization in the Age of Deep Neural Networks" by Bruch et al.].
+
+  Args:
+    labels: A `Tensor` of the same shape as `logits` representing graded
+      relevance.
+    logits: A `Tensor` with shape [batch_size, list_size]. Each value is the
+      ranking score of the corresponding item.
+    weights: A scalar, a `Tensor` with shape [batch_size, 1] for list-wise
+      weights, or a `Tensor` with shape [batch_size, list_size] for item-wise
+      weights. If None, the weight of a list in the mini-batch is set to the sum
+      of the labels of the items in that list.
+    reduction: One of `tf.losses.Reduction` except `NONE`. Describes how to
+      reduce training loss over batch.
+    name: A string used as the name for this loss.
+    alpha: The exponent in the generalized sigmoid function.
+
+  Returns:
+    An op for the ApproxNDCG loss.
+  """
+  loss = losses_impl.ApproxNDCGAt1Loss(name, params={'alpha': alpha})
+  with tf.compat.v1.name_scope(loss.name, 'approx_ndcgAt1_loss',
                                (labels, logits, weights)):
     return loss.compute(labels, logits, weights, reduction)
 

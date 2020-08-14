@@ -40,6 +40,7 @@ class RankingLossKey(object):
   MEAN_SQUARED_LOSS = 'mean_squared_loss'
   LIST_MLE_LOSS = 'list_mle_loss'
   APPROX_NDCG_LOSS = 'approx_ndcg_loss'
+  APPROX_NDCGAT1_LOSS = 'approx_ndcgAt1_loss'
   APPROX_MRR_LOSS = 'approx_mrr_loss'
   GUMBEL_APPROX_NDCG_LOSS = 'gumbel_approx_ndcg_loss'
 
@@ -78,6 +79,7 @@ def get(loss,
       RankingLossKey.SIGMOID_CROSS_ENTROPY_LOSS: SigmoidCrossEntropyLoss,
       RankingLossKey.MEAN_SQUARED_LOSS: MeanSquaredLoss,
       RankingLossKey.APPROX_NDCG_LOSS: ApproxNDCGLoss,
+      RankingLossKey.APPROX_NDCGAT1_LOSS: ApproxNDCGAt1Loss,
       RankingLossKey.APPROX_MRR_LOSS: ApproxMRRLoss,
       RankingLossKey.GUMBEL_APPROX_NDCG_LOSS: GumbelApproxNDCGLoss,
   }
@@ -236,6 +238,18 @@ class ApproxNDCGLoss(_RankingLoss):
                lambda_weight=None):
     super(ApproxNDCGLoss, self).__init__(reduction, name)
     self._loss = losses_impl.ApproxNDCGLoss(
+        name='{}_impl'.format(name), lambda_weight=lambda_weight)
+
+
+class ApproxNDCGAt1Loss(_RankingLoss):
+  """For approximate NDCG loss."""
+
+  def __init__(self,
+               reduction=tf.losses.Reduction.AUTO,
+               name=None,
+               lambda_weight=None):
+    super(ApproxNDCGAt1Loss, self).__init__(reduction, name)
+    self._loss = losses_impl.ApproxNDCGAt1Loss(
         name='{}_impl'.format(name), lambda_weight=lambda_weight)
 
 
