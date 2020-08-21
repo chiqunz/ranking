@@ -267,7 +267,7 @@ def ndcg(labels, ranks=None, perm_mat=None, k=None):
     gains = tf.reduce_sum(
         input_tensor=perm_mat * tf.expand_dims(gains, 1), axis=-1)
   if k != None:
-    mask = tf.sigmoid(-10 * (ranks - k))
+    mask = tf.sigmoid(-20 * (ranks - k - 0.5))
     gains = gains * mask
   dcg = tf.reduce_sum(input_tensor=gains * discounts, axis=-1, keepdims=True)
   ndcg_ = dcg * inverse_max_dcg(labels)
