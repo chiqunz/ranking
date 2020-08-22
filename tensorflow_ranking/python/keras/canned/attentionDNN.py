@@ -20,7 +20,7 @@ import tensorflow.compat.v2 as tf
 from tensorflow_ranking.python.keras import network as network_lib
 
 
-class AttentionDNNRankingNetwork(network_lib.UnivariateRankingNetwork):
+class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork):
   """Deep Neural Network (DNN) scoring based univariate ranking network."""
 
   def __init__(self,
@@ -45,11 +45,14 @@ class AttentionDNNRankingNetwork(network_lib.UnivariateRankingNetwork):
         **kwargs)
     self._num_cnn_filter = num_cnn_filter
     self._hidden_layer_dims = [int(d) for d in hidden_layer_dims]
+    self._batch_norm_moment = batch_norm_moment
+    self._activation = activation
+    self._use_batch_norm = use_batch_norm
+    self._dropout = dropout
 
     self._cnn_layer = tf.keras.layers.Conv1D(
       filters=self._num_cnn_filter,
-      kernel_size=4,
-      # Use 'same' padding so outputs have the same shape as inputs.
+      kernel_size=1,
       padding='same')
 
     layers = []
@@ -83,12 +86,13 @@ class AttentionDNNRankingNetwork(network_lib.UnivariateRankingNetwork):
       (tf.Tensor) A score tensor of shape [batch_size, 1].
     """
 
-    context_input = [
-      tf.expand_dims(context_features[name], axis=-1) for name in sorted(self.context_feature_columns)
-    ]
-    example_input = [
-      tf.expand_dims(example_features[name], axis=-1) for name in sorted(self.example_feature_columns)
-    ]
+    context_input = []
+    example_input = []
+	
+	# we assume context and example features are same for now
+    for name in self.example_feature_columns:
+      context_input.append(context_features[name])
+      example_input.append(example_features[name])
 
     context_input = tf.concat(context_input, -1)
     example_input = tf.concat(example_input, -1)

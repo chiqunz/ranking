@@ -255,7 +255,7 @@ class MultivariateAttentionRankingNetwork(RankingNetwork):
                example_feature_columns=None,
                name='univariate_ranking_network',
                **kwargs):
-    super(UnivariateRankingNetwork, self).__init__(
+    super(MultivariateAttentionRankingNetwork, self).__init__(
         context_feature_columns=context_feature_columns,
         example_feature_columns=example_feature_columns,
         name=name,
@@ -310,10 +310,10 @@ class MultivariateAttentionRankingNetwork(RankingNetwork):
     for name, tensor in six.iteritems(example_features):
       # Replace invalid example features with valid ones.
       padded_tensor = tf.gather_nd(tensor, nd_indices)  #[batch_size, list_size, ]
-      large_batch_context_features[name] = utils.reshape_first_ndims(
-          padded_tensor, 2, [batch_size * list_size])
+      large_batch_context_features[name] = tf.expand_dims(utils.reshape_first_ndims(
+          padded_tensor, 2, [batch_size * list_size]), axis=-1)
         
-      large_batch_example_features[name] = tf.repeat(padded_tensor, repeats=list_size, axis=1)
+      large_batch_example_features[name] = tf.repeat(padded_tensor, repeats=list_size, axis=0)
 
     # Get scores for large batch.
     scores = self.score(
