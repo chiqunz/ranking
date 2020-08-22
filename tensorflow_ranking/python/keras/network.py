@@ -243,3 +243,86 @@ class UnivariateRankingNetwork(RankingNetwork):
     # Apply nd_mask to zero out invalid entries.
     logits = tf.where(nd_mask, logits, tf.zeros_like(logits))
     return logits
+
+
+class MultivariateAttentionRankingNetwork(RankingNetwork):
+  """Base class for multivariate ranking network."""
+
+  __metaclass__ = abc.ABCMeta
+
+  def __init__(self,
+               context_feature_columns=None,
+               example_feature_columns=None,
+               name='univariate_ranking_network',
+               **kwargs):
+    super(UnivariateRankingNetwork, self).__init__(
+        context_feature_columns=context_feature_columns,
+        example_feature_columns=example_feature_columns,
+        name=name,
+        **kwargs)
+
+  @abc.abstractmethod
+  def score(self, context_features=None, example_features=None, training=None):
+    """Multivariate scoring of context and one example to generate a score.
+
+    Args:
+      context_features: (dict) context feature names to 2D tensors of shape
+        [batch_size, ...].
+      example_features: (dict) example feature names to 2D tensors of shape
+        [batch_size, list_size, ...].
+      training: (bool) whether in training or inference mode.
+
+    Returns:
+      (tf.Tensor) A score tensor of shape [batch_size, 1].
+    """
+    raise NotImplementedError('Calling an abstract method, '
+                              'tfr.keras.UnivariateRankingModel.score().')
+
+  def compute_logits(self,
+                     context_features=None,
+                     example_features=None,
+                     training=None,
+                     mask=None):
+    """Scores context and examples to return a score per document. We iterate each example and transform that example into context
+
+    Args:
+      context_features: (dict) context feature names to 2D tensors of shape
+        [batch_size, feature_dims].
+      example_features: (dict) example feature names to 3D tensors of shape
+        [batch_size, list_size, feature_dims].
+      training: (bool) whether in train or inference mode.
+      mask: (tf.Tensor) Mask is a tensor of shape [batch_size, list_size], which
+        is True for a valid example and False for invalid one. If mask is None,
+        all entries are valid.
+
+    Returns:
+      (tf.Tensor) A score tensor of shape [batch_size, list_size].
+    """
+    tensor = next(six.itervalues(example_features))
+    batch_size = tf.shape(tensor)[0]
+    list_size = tf.shape(tensor)[1]
+    if mask is None:
+      mask = tf.ones(shape=[batch_size, list_size], dtype=tf.bool)
+    nd_indices, nd_mask = utils.padded_nd_indices(is_valid=mask)
+
+    large_batch_context_features = {}
+    large_batch_example_features = {}
+    for name, tensor in six.iteritems(example_features):
+      # Replace invalid example features with valid ones.
+      padded_tensor = tf.gather_nd(tensor, nd_indices)  #[batch_size, list_size, ]
+      large_batch_context_features[name] = utils.reshape_first_ndims(
+          padded_tensor, 2, [batch_size * list_size])
+        
+      large_batch_example_features[name] = tf.repeat(padded_tensor, repeats=list_size, axis=1)
+
+    # Get scores for large batch.
+    scores = self.score(
+        context_features=large_batch_context_features,
+        example_features=large_batch_example_features,
+        training=training)
+    logits = tf.reshape(
+        scores, shape=[batch_size, list_size])
+
+    # Apply nd_mask to zero out invalid entries.
+    logits = tf.where(nd_mask, logits, tf.zeros_like(logits))
+    return logits
