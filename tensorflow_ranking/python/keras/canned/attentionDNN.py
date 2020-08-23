@@ -74,6 +74,8 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
       layers.append(tf.keras.layers.Activation(activation=self._activation))
       layers.append(tf.keras.layers.Dropout(rate=self._dropout))
 
+    self._attention_layer = tfa.layers.MultiHeadAttention(head_size=self._head_size, num_heads=self._num_head)
+
     self._scoring_layers = layers
     self._output_score_layer = tf.keras.layers.Dense(units=1, activation='sigmoid')
 
@@ -108,7 +110,7 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
 
     # query_value_attention_seq = tf.keras.layers.Attention()([context_projection, example_projection])
     # query_value_attention_seq = custom_layers.MultiHeadSelfAttention(self._num_cnn_filter, self._num_head)([context_projection, example_projection])
-    query_value_attention_seq = tfa.layers.MultiHeadAttention(head_size=self._head_size, num_heads=self._num_head)([context_projection, example_projection])
+    query_value_attention_seq = self._attention_layer([context_projection, example_projection])
 
     score_layer_input = tf.keras.layers.Flatten()(query_value_attention_seq)
 
