@@ -18,7 +18,7 @@
 import tensorflow.compat.v2 as tf
 
 from tensorflow_ranking.python.keras import network as network_lib
-
+from tensorflow_ranking.python.keras.canned import MultiHeadSelfAttention
 
 class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork):
   """Deep Neural Network (DNN) scoring based univariate ranking network."""
@@ -27,6 +27,7 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
                context_feature_columns=None,
                example_feature_columns=None,
                num_cnn_filter=128,
+               num_head=8,
                hidden_layer_dims=None,
                activation=None,
                use_batch_norm=True,
@@ -49,6 +50,7 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
     self._activation = activation
     self._use_batch_norm = use_batch_norm
     self._dropout = dropout
+    self._num_head = num_head
 
     self._cnn_layer = tf.keras.layers.Conv1D(
       filters=self._num_cnn_filter,
@@ -69,7 +71,7 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
       layers.append(tf.keras.layers.Dropout(rate=self._dropout))
 
     self._scoring_layers = layers
-    self._output_score_layer = tf.keras.layers.Dense(units=1)
+    self._output_score_layer = tf.keras.layers.Dense(units=1, activation='sigmoid')
 
 
   def score(self, context_features=None, example_features=None, training=True):
@@ -100,7 +102,8 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
     context_projection = self._cnn_layer(context_input)
     example_projection = self._cnn_layer(example_input)
 
-    query_value_attention_seq = tf.keras.layers.Attention()([context_projection, example_projection])
+    # query_value_attention_seq = tf.keras.layers.Attention()([context_projection, example_projection])
+    query_value_attention_seq = MultiHeadSelfAttention(self._num_cnn_filter, self._num_head)([context_projection, example_projection])
 
     score_layer_input = tf.keras.layers.Flatten()(query_value_attention_seq)
 
