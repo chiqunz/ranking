@@ -72,7 +72,7 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
             tf.keras.layers.BatchNormalization(
                 momentum=self._batch_norm_moment))
       layers.append(tf.keras.layers.Activation(activation=self._activation))
-      layers.append(tf.keras.layers.Dropout(rate=self._dropout))
+      # layers.append(tf.keras.layers.Dropout(rate=self._dropout))
 
     self._attention_layer = tfa.layers.MultiHeadAttention(head_size=self._head_size, num_heads=self._num_head)
 
