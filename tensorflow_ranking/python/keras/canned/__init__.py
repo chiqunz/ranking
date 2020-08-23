@@ -17,4 +17,4 @@
 from tensorflow_ranking.python.keras.canned.dnn import *   # pylint: disable=wildcard-import
 from tensorflow_ranking.python.keras.canned.gam import *  # pylint: disable=wildcard-import
 from tensorflow_ranking.python.keras.canned.attentionDNN import *  # pylint: disable=wildcard-import
-from tensorflow_ranking.python.keras.canned.multiheadAtten import *  # pylint: disable=wildcard-import
+from tensorflow_ranking.python.keras.canned.custom_layers import *  # pylint: disable=wildcard-import

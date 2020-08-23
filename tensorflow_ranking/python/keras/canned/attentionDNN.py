@@ -18,7 +18,7 @@
 import tensorflow.compat.v2 as tf
 
 from tensorflow_ranking.python.keras import network as network_lib
-from tensorflow_ranking.python.keras.canned import MultiHeadSelfAttention
+from tensorflow_ranking.python.keras.canned import custom_layers
 
 class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork):
   """Deep Neural Network (DNN) scoring based univariate ranking network."""
@@ -103,7 +103,7 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
     example_projection = self._cnn_layer(example_input)
 
     # query_value_attention_seq = tf.keras.layers.Attention()([context_projection, example_projection])
-    query_value_attention_seq = MultiHeadSelfAttention(self._num_cnn_filter, self._num_head)([context_projection, example_projection])
+    query_value_attention_seq = custom_layers.MultiHeadSelfAttention(self._num_cnn_filter, self._num_head)([context_projection, example_projection])
 
     score_layer_input = tf.keras.layers.Flatten()(query_value_attention_seq)
 
