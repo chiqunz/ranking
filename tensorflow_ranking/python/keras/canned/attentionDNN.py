@@ -28,14 +28,13 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
   def __init__(self,
                context_feature_columns=None,
                example_feature_columns=None,
-               num_cnn_filter=256,
+               num_cnn_filter=None,
                head_size=64,
-               num_head=4,
+               num_head=16,
                hidden_layer_dims=None,
                activation=None,
                use_batch_norm=True,
                batch_norm_moment=0.999,
-               dropout=0.5,
                name='attention_dnn_ranking_network',
                **kwargs):
     
@@ -47,21 +46,22 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
         example_feature_columns=example_feature_columns,
         name=name,
         **kwargs)
-    self._num_cnn_filter = num_cnn_filter
+    self._num_cnn_filter = [int(d) for d in num_cnn_filter]
     self._hidden_layer_dims = [int(d) for d in hidden_layer_dims]
     self._batch_norm_moment = batch_norm_moment
     self._activation = activation
     self._use_batch_norm = use_batch_norm
-    self._dropout = dropout
     self._num_head = num_head
     self._head_size = head_size
 
-    self._cnn_layer = tf.keras.layers.Conv1D(
-      filters=self._num_cnn_filter,
-      kernel_size=1,
-      padding='same')
-
     layers = []
+    convolution_layers = []
+
+    for num_filter in self._num_cnn_filter:
+      convolution_layers.append(self._cnn_layer = tf.keras.layers.Conv1D(filters=num_filter, kernel_size=1, activation=self._activation)
+
+    self._convolution_layers = convolution_layers
+
     if self._use_batch_norm:
       layers.append(
           tf.keras.layers.BatchNormalization(momentum=self._batch_norm_moment))
@@ -72,7 +72,6 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
             tf.keras.layers.BatchNormalization(
                 momentum=self._batch_norm_moment))
       layers.append(tf.keras.layers.Activation(activation=self._activation))
-      # layers.append(tf.keras.layers.Dropout(rate=self._dropout))
 
     self._attention_layer = tfa.layers.MultiHeadAttention(head_size=self._head_size, num_heads=self._num_head)
 
@@ -110,9 +109,13 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
 
     # query_value_attention_seq = tf.keras.layers.Attention()([context_projection, example_projection])
     # query_value_attention_seq = custom_layers.MultiHeadSelfAttention(self._num_cnn_filter, self._num_head)([context_projection, example_projection])
-    query_value_attention_seq = self._attention_layer([context_projection, example_projection])
+    query_value_attention_seq = self._attention_layer([context_projection, example_projection], training=training)
 
-    score_layer_input = tf.keras.layers.Flatten()(query_value_attention_seq)
+    convolution_outputs = query_value_attention_seq
+    for layer in self._convolution_layers:
+      convolution_outputs = layer(outputs, training=training)
+
+    score_layer_input = tf.keras.layers.Flatten()(convolution_outputs)
 
     outputs = score_layer_input
     for layer in self._scoring_layers:
@@ -128,6 +131,5 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
         'activation': self._activation,
         'use_batch_norm': self._use_batch_norm,
         'batch_norm_moment': self._batch_norm_moment,
-        'dropout': self._dropout,
     })
     return config
