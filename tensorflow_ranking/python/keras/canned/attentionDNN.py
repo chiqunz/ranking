@@ -77,7 +77,7 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
     self._attention_layer = tfa.layers.MultiHeadAttention(head_size=self._head_size, num_heads=self._num_head)
 
     self._scoring_layers = layers
-    self._output_score_layer = tf.keras.layers.Dense(units=1, activation='sigmoid')
+    self._output_score_layer = tf.keras.layers.Dense(units=1, activation='relu')
 
 
   def score(self, context_features=None, example_features=None, training=True):
