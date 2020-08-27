@@ -58,7 +58,7 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
     convolution_layers = []
 
     for num_filter in self._num_cnn_filter:
-      convolution_layers.append(self._cnn_layer = tf.keras.layers.Conv1D(filters=num_filter, kernel_size=1, activation=self._activation)
+      convolution_layers.append(tf.keras.layers.Conv1D(filters=num_filter, kernel_size=1, activation=self._activation))
 
     self._convolution_layers = convolution_layers
 
@@ -79,7 +79,7 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
     self._output_score_layer = tf.keras.layers.Dense(units=1, activation='relu')
 
 
-  def score(self, context_features=None, example_features=None, training=True):
+  def score(self, context_features=None, example_features=None, mask_features=None, training=True):
     """Univariate scoring of context and one example to generate a score.
 
     Args:
@@ -95,25 +95,22 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
 
     context_input = []
     example_input = []
-	
-	# we assume context and example features are same for now
+    
+    # we assume context and example features are same for now
     for name in self.example_feature_columns:
       context_input.append(context_features[name])
       example_input.append(example_features[name])
 
     context_input = tf.concat(context_input, -1)
     example_input = tf.concat(example_input, -1)
-
-    context_projection = self._cnn_layer(context_input)
-    example_projection = self._cnn_layer(example_input)
-
-    # query_value_attention_seq = tf.keras.layers.Attention()([context_projection, example_projection])
-    # query_value_attention_seq = custom_layers.MultiHeadSelfAttention(self._num_cnn_filter, self._num_head)([context_projection, example_projection])
-    query_value_attention_seq = self._attention_layer([context_projection, example_projection], training=training)
+    if mask_features is None:
+      query_value_attention_seq = self._attention_layer([context_input, example_input], training=training)
+    else:
+      query_value_attention_seq = self._attention_layer([context_input, example_input, None, mask_features], training=training)
 
     convolution_outputs = query_value_attention_seq
     for layer in self._convolution_layers:
-      convolution_outputs = layer(outputs, training=training)
+      convolution_outputs = layer(convolution_outputs, training=training)
 
     score_layer_input = tf.keras.layers.Flatten()(convolution_outputs)
 
@@ -131,5 +128,7 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
         'activation': self._activation,
         'use_batch_norm': self._use_batch_norm,
         'batch_norm_moment': self._batch_norm_moment,
+        'head_size': self._head_size,
+        'num_head': self._num_head
     })
     return config

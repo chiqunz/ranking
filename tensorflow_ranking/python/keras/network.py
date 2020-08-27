@@ -301,6 +301,12 @@ class MultivariateAttentionRankingNetwork(RankingNetwork):
     tensor = next(six.itervalues(example_features))
     batch_size = tf.shape(tensor)[0]
     list_size = tf.shape(tensor)[1]
+    
+    list_mask = tf.eye(list_size)
+    list_mask = list_mask == 0
+      
+    list_mask = tf.tile(list_mask, [batch_size, 1])
+    
     if mask is None:
       mask = tf.ones(shape=[batch_size, list_size], dtype=tf.bool)
     nd_indices, nd_mask = utils.padded_nd_indices(is_valid=mask)
@@ -311,9 +317,12 @@ class MultivariateAttentionRankingNetwork(RankingNetwork):
       # Replace invalid example features with valid ones.
       padded_tensor = tf.gather_nd(tensor, nd_indices)  #[batch_size, list_size, ]
       large_batch_context_features[name] = tf.expand_dims(utils.reshape_first_ndims(
-          padded_tensor, 2, [batch_size * list_size]), axis=-1)
-        
-      large_batch_example_features[name] = tf.repeat(padded_tensor, repeats=list_size, axis=0)
+          padded_tensor, 2, [batch_size * list_size]), axis=1)
+      repeated_tensor = tf.repeat(padded_tensor, repeats=list_size, axis=0)
+      large_batch_example_features[name] = tf.ragged.boolean_mask(repeated_tensor, list_mask).to_tensor()
+      
+      
+      
 
     # Get scores for large batch.
     scores = self.score(
