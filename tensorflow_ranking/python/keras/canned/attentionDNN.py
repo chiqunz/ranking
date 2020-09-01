@@ -97,13 +97,14 @@ class MultiHeadAttentionDNNRankingNetwork(network_lib.MultivariateAttentionRanki
       (tf.Tensor) A score tensor of shape [batch_size, 1].
     """
 
-    context_input = []
-    example_input = []
-    
-    # we assume context and example features are same for now
-    for name in self.example_feature_columns:
-      context_input.append(context_features[name])
-      example_input.append(example_features[name])
+    context_input = [
+        context_features[name]
+        for name in sorted(self.example_feature_columns)
+    ]
+    example_input = [
+        example_features[name]
+        for name in sorted(self.example_feature_columns)
+    ]
 
     context_input = tf.concat(context_input, -1)
     example_input = tf.concat(example_input, -1)
@@ -214,13 +215,14 @@ class AttentionDNNRankingNetwork(network_lib.MultivariateAttentionRankingNetwork
       (tf.Tensor) A score tensor of shape [batch_size, 1].
     """
 
-    context_input = []
-    example_input = []
-    
-    # we assume context and example features are same for now
-    for name in self.example_feature_columns:
-      context_input.append(context_features[name])
-      example_input.append(example_features[name])
+    context_input = [
+        context_features[name]
+        for name in sorted(self.example_feature_columns)
+    ]
+    example_input = [
+        example_features[name]
+        for name in sorted(self.example_feature_columns)
+    ]
 
     context_input = tf.concat(context_input, -1)
     example_input = tf.concat(example_input, -1)
