@@ -43,6 +43,7 @@ class RankingLossKey(object):
   APPROX_NDCGAT1_LOSS = 'approx_ndcgAt1_loss'
   APPROX_MRR_LOSS = 'approx_mrr_loss'
   GUMBEL_APPROX_NDCG_LOSS = 'gumbel_approx_ndcg_loss'
+  GUMBEL_APPROX_NDCGAT1_LOSS = 'gumbel_approx_ndcgAt1_loss'
 
 
 def get(loss,
@@ -82,6 +83,7 @@ def get(loss,
       RankingLossKey.APPROX_NDCGAT1_LOSS: ApproxNDCGAt1Loss,
       RankingLossKey.APPROX_MRR_LOSS: ApproxMRRLoss,
       RankingLossKey.GUMBEL_APPROX_NDCG_LOSS: GumbelApproxNDCGLoss,
+      RankingLossKey.GUMBEL_APPROX_NDCGAT1_LOSS: GumbelApproxNDCGAt1Loss,
   }
 
   key_to_cls_with_lambda_weights = {
@@ -284,6 +286,37 @@ class GumbelApproxNDCGLoss(ApproxNDCGLoss):
     return super(GumbelApproxNDCGLoss, self).__call__(gbl_labels, gbl_logits,
                                                       gbl_weights)
 
+
+class GumbelApproxNDCGAt1Loss(ApproxNDCGAt1Loss):
+  """For Gumbel approximate NDCG loss."""
+
+  def __init__(self,
+               reduction=tf.losses.Reduction.AUTO,
+               name=None,
+               lambda_weight=None,
+               sample_size=8,
+               temperature=1.0,
+               seed=None):
+    super(GumbelApproxNDCGAt1Loss, self).__init__(reduction, name, lambda_weight)
+    self._name = name
+    self._sample_size = sample_size
+    self._temperature = temperature
+    self._seed = seed
+
+  def __call__(self, y_true, y_pred, sample_weight=None):
+    """See _RankingLoss."""
+    # For Gumbel approx NDCG, the logits are sampled from Gumbel distribution
+    # to sort the documents.
+    gbl_labels, gbl_logits, gbl_weights = losses_impl.gumbel_softmax_sample(
+        y_true,
+        y_pred,
+        weights=sample_weight,
+        name=self._name,
+        sample_size=self._sample_size,
+        temperature=self._temperature,
+        seed=self._seed)
+    return super(GumbelApproxNDCGAt1Loss, self).__call__(gbl_labels, gbl_logits,
+                                                      gbl_weights)
 
 class SigmoidCrossEntropyLoss(_RankingLoss):
   """For sigmoid cross-entropy loss."""

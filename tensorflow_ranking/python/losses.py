@@ -42,6 +42,7 @@ class RankingLossKey(object):
   APPROX_NDCGAT1_LOSS = 'approx_ndcgAt1_loss'
   APPROX_MRR_LOSS = 'approx_mrr_loss'
   GUMBEL_APPROX_NDCG_LOSS = 'gumbel_approx_ndcg_loss'
+  GUMBEL_APPROX_NDCGAT1_LOSS = 'gumbel_approx_ndcgAt1_loss'
   NEURAL_SORT_CROSS_ENTROPY_LOSS = 'neural_sort_cross_entropy_loss'
   GUMBEL_NEURAL_SORT_CROSS_ENTROPY_LOSS = 'gumbel_neural_sort_cross_entropy_loss'
 
@@ -161,6 +162,8 @@ def make_loss_fn(loss_keys,
         RankingLossKey.APPROX_MRR_LOSS: (_approx_mrr_loss, loss_kwargs),
         RankingLossKey.GUMBEL_APPROX_NDCG_LOSS:
             (_approx_ndcg_loss, gbl_loss_kwargs),
+        RankingLossKey.GUMBEL_APPROX_NDCGAT1_LOSS:
+            (_approx_ndcgAt1_loss, gbl_loss_kwargs),
         RankingLossKey.NEURAL_SORT_CROSS_ENTROPY_LOSS:
             (_neural_sort_cross_entropy_loss, loss_kwargs),
         RankingLossKey.GUMBEL_NEURAL_SORT_CROSS_ENTROPY_LOSS:
@@ -234,6 +237,8 @@ def make_loss_metric_fn(loss_key,
           losses_impl.ApproxMRRLoss(name),
       RankingLossKey.GUMBEL_APPROX_NDCG_LOSS:
           losses_impl.ApproxNDCGLoss(name),
+      RankingLossKey.GUMBEL_APPROX_NDCGAT1_LOSS:
+          losses_impl.ApproxNDCGAt1Loss(name),
       RankingLossKey.NEURAL_SORT_CROSS_ENTROPY_LOSS:
           losses_impl.NeuralSortCrossEntropyLoss(name),
       RankingLossKey.GUMBEL_NEURAL_SORT_CROSS_ENTROPY_LOSS:
